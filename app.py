@@ -1,11 +1,13 @@
 from typing import List
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from marshmallow import ValidationError
 from sqlalchemy import Column, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import os
 from datetime import date
 import pymysql
+from flask_marshmallow import Marshmallow
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mechanic.db'
@@ -14,6 +16,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mechanic.db'
 
 class Base(DeclarativeBase):
     pass
+
+db = SQLAlchemy(model_class=Base)
+ma = Marshmallow()
 
 db = SQLAlchemy(model_class=Base)
 db.init_app(app) 
@@ -63,21 +68,96 @@ class Mechanic(Base):
 
     service_tickets: Mapped[List['Service_Ticket']] = relationship(secondary=service_mechanics, back_populates='mechanics')
 
-with app.app_context():
-    db.create_all()
-    # db.session.commit()
-    # new_customer = Customer(name="James",email="realemail@email.com", phone="205457894")
-    # db.session.add(new_customer)
-    # db.session.commit()
-    customer = db.session.get(Customer, 1)
-    print(customer.name)
+#============ Schema ============
 
+class CustomerSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Customer
+       
 
+class ServiceTicketSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Service_Ticket
+        
 
+class MechanicSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Mechanic
+       
 
+customer_schema = CustomerSchema()
+customers_schema = CustomerSchema(many=True)
+service_ticket_schema = ServiceTicketSchema()
+service_tickets_schema = ServiceTicketSchema(many=True)
+mechanic_schema = MechanicSchema()
+mechanics_schema = MechanicSchema(many=True)
 
+#========== Routes ==========
 
+@app.route('/customers', methods=['POST'])
+def create_customer():
+    try:
+        customer_data = customer_schema.load(request.json)
+    except ValidationError as e:
+        return jsonify(e.messages), 400
+        
+    new_customer = Customer(name=customer_data['name'], email=customer_data['email'], phone=customer_data['phone'])
+    db.session.add(new_customer)
+    db.session.commit()
 
+    return customer_schema.jsonify(new_customer), 201
+
+@app.route('/customers', methods=["GET"])
+def get_customer(customer_id):
+    customer = db.session.get(Customer, customer_id)
+
+    return customer_schema.jsonify(customer), 200
+
+@app.route('/customers/,<int:customer_id>', methods=["GET"])
+def get_customer(customer_id):
+    customer = db.session.get(Customer, customer_id)
+
+    return customer_schema.jsonify(customer), 200
+
+@app.route('/customers/<int:customer_id>', methods=["PUT"])
+def update_customer(customer_id):
+    customer = db.session.get(Customer, customer_id)
+
+    if customer == None:
+        return jsonify({'message': 'invalid_id'}), 400
+    
+    try:
+        customer_data = customer_schema.load(request.json)
+    except ValidationError as e:
+        return jsonify(e.messages), 400
+    
+    for field, value in customer_data.items():
+        if value:
+            setattr(customer, field, value)
+
+    db.session.commit()
+    return customer_schema.jsonify(customer), 200
+
+@app.route('/customers/<int:customer_id>', methods=["DELETE"])
+def delete_customer(customer_id):
+    customer = db.session.get(Customer, customer_id)
+
+    if customer == None:
+        return jsonify({'message': 'invalid_id'}), 400
+
+    db.session.delete(customer)
+    db.session.commit()
+    return jsonify({'message': f'successfully deleted customer {customer_id}!'})
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        # db.session.commit()
+        # new_customer = Customer(name="James",email="realemail@email.com", phone="205457894")
+        # db.session.add(new_customer)
+        # db.session.commit()
+        # customer = db.session.get(Customer, 1)
+        # print(customer.name)
+
+
     app.run()
