@@ -7,8 +7,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import date
 import pymysql
 from flask_marshmallow import Marshmallow
-import sys
-print(sys.path)
+# import sys
+# print(sys.path)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mechanic.db'
@@ -20,8 +20,6 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 ma = Marshmallow()
-
-db = SQLAlchemy(model_class=Base)
 db.init_app(app) 
 
 # ========== Models ==========
@@ -108,7 +106,7 @@ def create_customer():
 
     return customer_schema.jsonify(new_customer), 201
 
-@app.route('/customers', methods=["GET"])
+@app.route('/customers/<int:customer_id>', methods=["GET"])
 def get_customer(customer_id):
     customer = db.session.get(Customer, customer_id)
 
@@ -152,8 +150,8 @@ if __name__ == '__main__':
         # new_customer = Customer(name="James",email="realemail@email.com", phone="205457894")
         # db.session.add(new_customer)
         # db.session.commit()
-        # customer = db.session.get(Customer, 1)
-        # print(customer.name)
+        customer = db.session.get(Customer, 1)
+        print(customer.name)
 
 
-    app.run(debug=True)
+    app.run()
