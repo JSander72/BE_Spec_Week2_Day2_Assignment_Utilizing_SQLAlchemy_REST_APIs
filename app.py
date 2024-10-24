@@ -5,7 +5,7 @@ from sqlalchemy import Column, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import os
 from datetime import date
-# import pymysql
+import pymysql
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mechanic.db'
@@ -16,17 +16,7 @@ class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)
-db.init_app(app)  # Adding sqlalchemy extension to Flask
-
-# Test database connection
-# try:
-#     with app.app_context():
-#         db.session.execute(select(1)).scalar()
-#     print("Connected to MySQL Workbench!")
-
-# except Exception as e:
-#     print(f"Error connecting to database: {e}")
-
+db.init_app(app) 
 
 # ========== Models ==========
 
@@ -76,6 +66,18 @@ class Mechanic(Base):
 with app.app_context():
     db.create_all()
     # db.session.commit()
+    # new_customer = Customer(name="James",email="realemail@email.com", phone="205457894")
+    # db.session.add(new_customer)
+    # db.session.commit()
+    customer = db.session.get(Customer, 1)
+    print(customer.name)
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run()
