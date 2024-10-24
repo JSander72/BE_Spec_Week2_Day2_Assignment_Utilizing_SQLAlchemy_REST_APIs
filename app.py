@@ -2,12 +2,13 @@ from typing import List
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import ValidationError
-from sqlalchemy import Column, select
+from sqlalchemy import Column
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-import os
 from datetime import date
 import pymysql
 from flask_marshmallow import Marshmallow
+import sys
+print(sys.path)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mechanic.db'
@@ -113,11 +114,6 @@ def get_customer(customer_id):
 
     return customer_schema.jsonify(customer), 200
 
-@app.route('/customers/,<int:customer_id>', methods=["GET"])
-def get_customer(customer_id):
-    customer = db.session.get(Customer, customer_id)
-
-    return customer_schema.jsonify(customer), 200
 
 @app.route('/customers/<int:customer_id>', methods=["PUT"])
 def update_customer(customer_id):
@@ -160,4 +156,4 @@ if __name__ == '__main__':
         # print(customer.name)
 
 
-    app.run()
+    app.run(debug=True)
